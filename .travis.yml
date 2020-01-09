@@ -66,51 +66,7 @@ matrix:
 cache: ccache
 
 before_install:
-  - export CACHE_NAME=$TRAVIS_OS_NAME-$TOOLSET-$STD-$JOB
   - export PATH=$BOOST_ROOT:$PATH
-  - if [[ "$TRAVIS_COMPILER" =~ ^clang- ]]; then export STDLIB=stdlib=libc++ ; fi
-  - |
-    # Creating ~/user-config.jam file
-    sed 's/^  //' > ~/user-config.jam << 'EOF'
-
-    import common ;
-    import feature ;
-    import os ;
-    import regex ;
-    import toolset ;
-
-
-    # Ccache
-    local CCACHE = [ common.find-tool ccache ] ;
-    local TOOLSET = [ os.environ TRAVIS_COMPILER ] ;
-    local toolset-parts = [ regex.split $(TOOLSET) "-" ] ;
-    local toolset-name = $(toolset-parts[1]) ;
-    local toolset-feature = $(toolset-parts[2-]:J="-") ;
-
-    local cxx ;
-    switch $(toolset-name) {
-        case gcc   : cxx ?= [ regex.replace $(TOOLSET) "gcc" "g++" ] ;
-        case clang : cxx ?= [ regex.replace $(TOOLSET) "clang" "clang++" ] ;
-        case *     : EXIT "user-config: Unsupported toolset $(toolset-name)" ;
-    }
-
-    using $(toolset-name) : $(toolset-feature) : $(CCACHE) $(cxx) ;
-
-
-    # Extend stdlib with libc++
-    feature.extend stdlib : libc++ ;
-    feature.compose <stdlib>libc++ : <cxxflags>-stdlib=libc++ <linkflags>-stdlib=libc++ ;
-
-
-    # Ignore some warnings
-    feature.feature known-warnings : suppress : optional incidental propagated ;
-    toolset.flags gcc.compile OPTIONS <known-warnings>suppress :
-        -Wno-maybe-uninitialized  # this warning is known to give false positives
-        -Wno-sign-compare
-      : unchecked ;
-    toolset.flags clang-linux.compile OPTIONS <known-warnings>suppress :
-        -Wno-unused-command-line-argument # Sometimes it barks on -I and -stdlib
-      : unchecked ;
 
   # Checkout Boost
   - git clone -b $BRANCH --depth 1 https://github.com/boostorg/boost.git $BOOST_ROOT
@@ -131,12 +87,9 @@ before_install:
 
   # Remove the empty folder
   - rm -rf libs/$PROJECT
-  - ./bootstrap.sh --with-toolset=clang --with-libraries=$TEST_LINK_DEPS
+  - ./bootstrap.sh --with-toolset=clang
     || ( echo === bootstrap.log === ; cat bootstrap.log ; exit 1 ; )
   - ./b2 headers
-  - ./b2 -j`nproc` link=shared threading=multi variant=release
-      toolset=$TRAVIS_COMPILER cxxstd=${STD#*,} $STDLIB
-      warnings=off
 
   # Move the repository to boost/libs and make a link to previous place
   - mv $TRAVIS_BUILD_DIR libs/$PROJECT
@@ -146,5 +99,4 @@ before_install:
 
 script:
   - b2 -j`nproc` link=shared threading=multi variant=release
-      toolset=$TRAVIS_COMPILER cxxstd=$STD $STDLIB
-      warnings=on known-warnings=suppress warnings-as-errors=on
+      toolset=$TRAVIS_COMPILER cxxstd=$STD
