@@ -80,10 +80,8 @@ before_install:
   - python tools/boostdep/depinst/depinst.py $PROJECT
 
   # apply random unused parameter warnings patch
-  - pushd libs/type_traits
   - PATCH_URL=https://github.com/boostorg/type_traits/pull/134.patch;
-    curl -sL $PATCH_URL | patch -sup 1
-  - popd
+    curl -sL $PATCH_URL | patch -sup 1 -d libs/type_traits
 
   # Remove the empty folder
   - rm -rf libs/$PROJECT
