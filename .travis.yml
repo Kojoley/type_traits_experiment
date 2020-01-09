@@ -74,14 +74,12 @@ before_install:
 
   # Checkout Boost
   - ~/git clone -j10 --branch=$BRANCH --depth=1 --quiet
-      --recurse-submodules=":(exclude)libs/$PROJECT" --shallow-submodules
+      --recurse-submodules --shallow-submodules
       https://github.com/boostorg/boost.git $BOOST_ROOT
   - pushd $BOOST_ROOT
   # apply the PR
   - PATCH_URL=https://github.com/boostorg/type_traits/pull/134.patch;
     curl -sL $PATCH_URL | patch -fsup 1 -d libs/type_traits
-  # Remove the empty folder
-  - rm -rf libs/$PROJECT
   - ./bootstrap.sh --with-toolset=clang
     || ( echo === bootstrap.log === ; cat bootstrap.log ; exit 1 ; )
 
