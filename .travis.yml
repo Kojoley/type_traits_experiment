@@ -71,17 +71,17 @@ before_install:
   # Checkout Boost
   - git clone -b $BRANCH --depth 1 https://github.com/boostorg/boost.git $BOOST_ROOT
   - pushd $BOOST_ROOT
-  - git submodule update --init --
+  - git submodule update --init --depth 50 --jobs 10 --
       tools/boost_install
       libs/headers
       tools/build
       libs/config
       tools/boostdep
-  - python tools/boostdep/depinst/depinst.py $PROJECT
+  - python tools/boostdep/depinst/depinst.py --git_args "--depth 10 --jobs 2" $BOOST_ROOT/libs/$PROJECT
 
   # apply random unused parameter warnings patch
   - PATCH_URL=https://github.com/boostorg/type_traits/pull/134.patch;
-    curl -sL $PATCH_URL | patch -sup 1 -d libs/type_traits
+    curl -sL $PATCH_URL | patch -fsup 1 -d $BOOST_ROOT/libs/type_traits
 
   # Remove the empty folder
   - rm -rf libs/$PROJECT
